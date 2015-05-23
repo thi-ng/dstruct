@@ -1,0 +1,139 @@
+#+SETUPFILE: setup.org
+
+* Contents                                                         :toc_4_gh:
+ - [[#namespace-thingdstructintervaltree][Namespace: thi.ng.dstruct.intervaltree]]
+     - [[#type-definitions][Type definitions]]
+         - [[#todo-transducers][TODO transducers]]
+     - [[#constructor][Constructor]]
+     - [[#complete-namespace-definition][Complete namespace definition]]
+
+* Namespace: thi.ng.dstruct.intervaltree
+
+This namespace contains an implementation of centered interval trees
+based on the related [[http://en.wikipedia.org/wiki/Interval_tree#Centered_interval_tree][Wikipedia article]]. This implementation is using
+mutable fields and is *not* thread safe.
+
+The tree maps intervals to values and can be queried for a given point
+(number), for which it returns values of all matching intervals.
+Multiple values can be mapped to the same interval, but adding values
+is idempotent (provided a value is always associated with the same
+interval).
+
+** Type definitions
+
+*** TODO transducers
+
+#+BEGIN_SRC clojure :noweb-ref impl
+  (defprotocol PIntervalTree
+    (add-interval [_ i x])
+    (query-point [_ x acc])
+    (query-interval [_ i acc]))
+
+  (defn sort-min
+    [a b]
+    (let [c (compare (nth a 0) (nth b 0))]
+      (if (zero? c) (compare a b) c)))
+
+  (defn sort-max
+    [a b]
+    (let [c (compare (nth b 1) (nth a 1))]
+      (if (zero? c) (compare b a) c)))
+
+  (deftype IntervalNode
+      #?(:clj
+          [median
+           ^:unsynchronized-mutable left
+           ^:unsynchronized-mutable right
+           ^:unsynchronized-mutable c-left
+           ^:unsynchronized-mutable c-right]
+          :cljs
+          [median
+           ^:mutable left
+           ^:mutable right
+           ^:mutable c-left
+           ^:mutable c-right])
+    PIntervalTree
+    (add-interval [_ [il ih :as i] val]
+      (cond
+       (< ih median)
+       (if left
+         (add-interval left i val)
+         (let [val #{val}]
+           (set! left (IntervalNode. (mm/addm il ih 0.5) nil nil
+                                     (sorted-map-by sort-min i val)
+                                     (sorted-map-by sort-max i val)))))
+
+       (> il median)
+       (if right
+         (add-interval right i val)
+         (let [val #{val}]
+           (set! right (IntervalNode. (mm/addm il ih 0.5) nil nil
+                                      (sorted-map-by sort-min i val)
+                                      (sorted-map-by sort-max i val)))))
+
+       :else (do
+               (set! c-left (update-in c-left [i] (fnil conj #{}) val))
+               (set! c-right (update-in c-right [i] (fnil conj #{}) val))))
+      _)
+    (query-point
+      [_ x acc]
+      (let [acc (if (m/delta= x median)
+                  (into acc (mapcat val c-left))
+                  (if (< x median)
+                    (->> c-left (r/take-while #(<= (nth (key %) 0) x)) (r/mapcat val) (into acc))
+                    (->> c-right (r/take-while #(>= (nth (key %) 1) x)) (r/mapcat val) (into acc))))
+            acc (if (and left (< x median))
+                  (query-point left x acc)
+                  acc)
+            acc (if (and right (> x median))
+                  (query-point right x acc)
+                  acc)]
+        acc))
+    (query-interval
+      [_ [a b :as i] acc]
+      (let [acc (->> c-left
+                     (r/filter #(let [k (key %)] (and (<= (nth k 0) b) (>= (nth k 1) a))))
+                     (r/mapcat val)
+                     (into acc))
+            acc (if (and left (< a median))
+                  (query-interval left i acc)
+                  acc)
+            acc (if (and right (> b median))
+                  (query-interval right i acc)
+                  acc)]
+        acc))
+    Object
+    (toString
+      [_]
+      (str ":m " median
+           ", :l " (pr-str left)
+           ", :r " (pr-str right)
+           ", :cl " (pr-str c-left)
+           ", :cr " (pr-str c-right)
+           )))
+#+END_SRC
+
+** Constructor
+
+#+BEGIN_SRC clojure :noweb-ref ctor
+  (defn interval-tree
+    ([x]
+       (IntervalNode. x nil nil (sorted-map-by sort-min) (sorted-map-by sort-max)))
+    ([x coll]
+       (reduce (fn [t [k v]] (add-interval t k v)) (interval-tree x) coll)))
+#+END_SRC
+
+** Complete namespace definition
+
+#+BEGIN_SRC clojure :tangle ../babel/src/thi/ng/dstruct/intervaltree.cljc :noweb yes :mkdirp yes :padline no
+  (ns thi.ng.dstruct.intervaltree
+    #?(:cljs (:require-macros [thi.ng.math.macros :as mm]))
+    (:require
+     [thi.ng.math.core :as m]
+     [clojure.core.reducers :as r]
+     #?(:clj [thi.ng.math.macros :as mm])))
+
+  <<impl>>
+
+  <<ctor>>
+ #+END_SRC

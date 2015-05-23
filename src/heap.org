@@ -1,0 +1,168 @@
+#+SETUPFILE: setup.org
+
+* Contents                                                         :toc_4_gh:
+ - [[#namespace-thingdstructheap][Namespace: thi.ng.dstruct.heap]]
+     - [[#todo-make-cljs-compatible][TODO make CLJS compatible]]
+     - [[#type-definition][Type definition]]
+     - [[#heap-operations][Heap operations]]
+     - [[#constructors][Constructors]]
+     - [[#complete-namespace-definition][Complete namespace definition]]
+
+* Namespace: thi.ng.dstruct.heap
+
+** TODO make CLJS compatible
+
+This namespace is currently *not CLJS compatible*.
+
+** Type definition
+
+#+BEGIN_SRC clojure :noweb-ref impl
+  #?(:clj
+     (deftype PersistentHeap
+         [^clojure.lang.PersistentVector heap
+          ^long n
+          compare
+          _meta]
+
+       clojure.lang.IObj
+       (meta [_] _meta)
+       (withMeta [_ m] (PersistentHeap. heap n compare m))
+
+       clojure.lang.ILookup
+       (valAt [_ k] (heap k))
+       (valAt [_ k not-found] (get heap k not-found))
+
+       clojure.lang.IFn
+       (invoke [_ k] (heap k))
+       (invoke [_ k not-found] (get heap k not-found))
+
+       clojure.lang.IPersistentVector
+       clojure.lang.ISeq
+       (count [_] n)
+       (first [_] (if (> n 0) (.nth heap 0)))
+       (next [_] (if (> n 0) (pop _) nil))
+       (more [_] (if (> n 0) (pop _) '()))
+       (entryAt [_ k] (clojure.lang.MapEntry. k (heap k)))
+       (nth [_ k] (heap k))
+       (nth [_ k not-found] (get heap k not-found))
+       (equiv [_ o] (= heap o))
+       (hashCode [_] (.hashCode heap))
+
+       (assocN [_ k v]
+         (PersistentHeap.
+          (rebalance (.assocN heap k v) compare)
+          (if (== k n) (inc n) n)
+          compare _meta))
+       (assoc [_ k v]
+         (PersistentHeap.
+          (rebalance (.assocN heap k v) compare)
+          (if (== k n) (inc n) n)
+          compare _meta))
+       (cons [_ v]
+         (PersistentHeap.
+          (percolate+ (.cons heap v) compare n) (inc n) compare _meta))
+
+       clojure.lang.Seqable
+       (seq [_] (ordered heap compare))
+
+       clojure.lang.IPersistentStack
+       (peek [_] (.nth heap 0))
+       (pop [_]
+         (condp = n
+           0 (throw (UnsupportedOperationException.))
+           1 (PersistentHeap. [] 0 compare _meta)
+           (PersistentHeap.
+            (percolate- (assoc (pop heap) 0 (peek heap)) (dec n) compare 0)
+            (dec n) compare _meta)))
+
+       clojure.lang.Reversible
+       (rseq [_]
+         (rseq (vec (.seq _))))
+
+       Object
+       (toString [_] (str heap))))
+#+END_SRC
+
+** Heap operations
+
+#+BEGIN_SRC clojure :noweb-ref ops
+  #?@(:clj
+      [(defn- percolate+
+         [heap compare ^long k]
+         (let [v (heap k)]
+           (loop [heap (transient heap), k k]
+             (if (> k 0)
+               (let [parent-idx (bit-shift-right (dec k) 1)
+                     parent     (heap parent-idx)]
+                 (if (> (compare parent v) 0)
+                   (recur (assoc! heap k parent) parent-idx)
+                   (persistent! (assoc! heap k v))))
+               (persistent! (assoc! heap k v))))))
+
+       (defn- percolate-
+         [heap n compare ^long k]
+         (let [n2 (bit-shift-right n 1)
+               v (heap k)]
+           (loop [heap (transient heap), k k]
+             (if (< k n2)
+               (let [left  (inc (bit-shift-left k 1))
+                     right (inc left)
+                     child (if (< right n)
+                             (if (< (compare (heap right) (heap left)) 0) right left)
+                             left)
+                     cval  (heap child)]
+                 (if (> (compare cval v) 0)
+                   (persistent! (assoc! heap k v))
+                   (recur (assoc! heap k cval) child)))
+               (persistent! (assoc! heap k v))))))
+
+       (defn- rebalance
+         [heap compare]
+         (let [n (count heap)]
+           (loop [heap heap, k (bit-shift-right n 1)]
+             (if (>= k 0)
+               (recur (percolate- heap n compare k) (dec k))
+               heap))))
+
+       (defn- delete-head
+         [heap compare]
+         (let [n (count heap)]
+           (condp = n
+             0 nil
+             1 []
+             (percolate- (assoc (pop heap) 0 (peek heap)) (dec n) compare 0))))
+
+       (defn delete-at
+         [heap compare k]
+         (rebalance (into (subvec heap 0 k) (subvec heap (inc k))) compare))
+
+       (defn- ordered
+         [heap compare]
+         (loop [acc [], h heap]
+           (if (seq h)
+             (recur (conj acc (first h)) (delete-head h compare))
+             (seq acc))))])
+#+END_SRC
+
+** Constructors
+
+#+BEGIN_SRC clojure :noweb-ref ctor
+  #?(:clj
+     (defn heap
+       [& coll]
+       (if (fn? (first coll))
+         (reduce conj (PersistentHeap. [] 0 (first coll) nil) (rest coll))
+         (reduce conj (PersistentHeap. [] 0 compare nil) coll))))
+#+END_SRC
+
+** Complete namespace definition
+
+#+BEGIN_SRC clojure :tangle ../babel/src/thi/ng/dstruct/heap.cljc :noweb yes :mkdirp yes :padline no
+  (ns thi.ng.dstruct.heap)
+
+  <<ops>>
+
+  <<impl>>
+
+  <<ctor>>
+#+END_SRC

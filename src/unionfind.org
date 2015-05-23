@@ -1,0 +1,100 @@
+#+SETUPFILE: setup.org
+
+* Contents                                                         :toc_4_gh:
+ - [[#namespace-thingdstructunionfind][Namespace: thi.ng.dstruct.unionfind]]
+     - [[#protocol-definition][Protocol definition]]
+     - [[#disjoint-set][Disjoint Set]]
+     - [[#complete-namespace-definition][Complete namespace definition]]
+
+* Namespace: thi.ng.dstruct.unionfind
+
+** Protocol definition
+
+#+BEGIN_SRC clojure :noweb-ref protos
+  (defprotocol PUnionFind
+    (register [_ p])
+    (unregister [_ p])
+    (canonical [_ p])
+    (canonical? [_ p])
+    (set-canonical [_ p q])
+    (disjoint-components [_])
+    (component [_ p])
+    (union [_ [p q]] [_ p q])
+    (unified? [_ p q]))
+#+END_SRC
+
+** Disjoint Set
+
+#+BEGIN_SRC clojure :noweb-ref disj-set
+  (deftype DisjointSet [index components]
+    PUnionFind
+    (canonical [_ p]
+      (if (components p) p (index p)))
+    (canonical? [_ p] (components p))
+    (set-canonical
+      [_ p q]
+      (let [canon (canonical _ p)
+            comp  (components canon)]
+        (if (comp q)
+          (DisjointSet.
+           (reduce #(assoc %1 %2 q) (dissoc index q) (disj comp q))
+           (-> components (dissoc canon) (assoc q comp)))
+          (throw
+           (new #?(:clj IllegalArgumentException :cljs js/Error)
+                (str p " not unified with " q))))))
+    (unified? [_ p q]
+      (= (index p p) (index q q)))
+    (component [_ p]
+      (components (canonical _ p)))
+    (disjoint-components [_]
+      (vals components))
+    (register
+      [_ p]
+      (if (canonical _ p) _
+          (DisjointSet. (assoc index p p) (assoc components p [p]))))
+    (unregister [_ p]
+      (if (canonical _ p)
+        (if-let [comp (components p)]
+          (let [comp (disj comp p)]
+            (if-let [q (first comp)]
+              (DisjointSet.
+               (reduce #(assoc % %2 q) (dissoc index p q) (disj comp q))
+               (-> components (dissoc p) (assoc q comp)))
+              (DisjointSet. (dissoc index p) (dissoc components p))))
+          (DisjointSet. (dissoc index p) (update-in components [(index p)] disj p)))
+        _))
+    (union [_ p q]
+      (let [canonp (index p p)
+            canonq (index q q)]
+        (if (= canonp canonq) _
+            (let [compp (or (components canonp) #{canonp})
+                  compq (or (components canonq) #{canonq})
+                  [canonp canonq compp compq] (if (<= (count compp) (count compq))
+                                                [canonp canonq compp compq]
+                                                [canonq canonp compq compp])]
+              (DisjointSet.
+               (loop [idx (transient index), i compp]
+                 (if i
+                   (recur (conj! idx [(first i) canonq]) (next i))
+                   (persistent! idx)))
+               (-> components
+                   (dissoc canonp)
+                   (assoc canonq (into compq compp))))))))
+    Object
+    (toString [_] (pr-str {:index index :components components})))
+
+  (defn disjoint-set
+    ([] (DisjointSet. {} {}))
+    ([xs] (reduce (partial apply union) (DisjointSet. {} {}) xs)))
+#+END_SRC
+
+** Complete namespace definition
+
+#+BEGIN_SRC clojure :tangle ../babel/src/thi/ng/dstruct/unionfind.cljc :noweb yes :mkdirp yes :padline no
+  (ns thi.ng.dstruct.unionfind)
+
+  <<protos>>
+
+  <<disj-set>>
+#+END_SRC
+
