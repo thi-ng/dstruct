@@ -1,0 +1,32 @@
+#+SETUPFILE: ../src/setup.org
+
+* Contents                                                         :toc_4_gh:
+ - [[#thingdstructtestcore][thi.ng.dstruct.test.core]]
+     - [[#main-tests][Main tests]]
+     - [[#complete-namespace-definition][Complete namespace definition]]
+
+* thi.ng.dstruct.test.core
+
+** Main tests
+
+#+BEGIN_SRC clojure :noweb-ref test
+  (deftest test-it
+    (is true))
+#+END_SRC
+
+** Complete namespace definition
+
+#+BEGIN_SRC clojure :tangle ../babel/test/thi/ng/dstruct/test/core.cljc :noweb yes :mkdirp yes :padline no
+  (ns thi.ng.dstruct.test.core
+    (:require
+     [thi.ng.dstruct.core :as d]
+     [thi.ng.dstruct.heap :as h]
+     [thi.ng.dstruct.intervaltree :as i]
+     [thi.ng.dstruct.unionfind :as u]
+     #?(:clj
+        [clojure.test :refer :all]
+        :cljs
+        [cemerick.cljs.test :refer-macros [is deftest]])))
+
+  <<test>>
+#+END_SRC

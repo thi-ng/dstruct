@@ -160,6 +160,8 @@ This namespace is currently *not CLJS compatible*.
 #+BEGIN_SRC clojure :tangle ../babel/src/thi/ng/dstruct/heap.cljc :noweb yes :mkdirp yes :padline no
   (ns thi.ng.dstruct.heap)
 
+  (declare percolate+ percolate- rebalance ordered)
+
   <<ops>>
 
   <<impl>>
