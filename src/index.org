@@ -100,7 +100,7 @@ target/dstruct-<<version>>.js
 ** Leiningen coordinates
 
 #+BEGIN_SRC clojure :noweb yes :noweb-ref lein-coords
-  [thi.ng/dstruct "0.1.0-SNAPSHOT"]
+  [thi.ng/dstruct "0.1.0"]
 #+END_SRC
 
 ** Building this project
