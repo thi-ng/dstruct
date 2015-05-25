@@ -223,9 +223,9 @@ symbol =version= holding the version string defined above:
 
 ** Release history
 
-| *Version*      | *Released* | *Lein coordinates*                  | *Description*        | *Tagged Github URL* |
-|----------------+------------+-------------------------------------+----------------------+---------------------|
-| 0.1.0-SNAPSHOT | 2015-05-23 | =[thi.ng/dstruct "0.1.0-SNAPSHOT"]= | initial test release | [[https://github.com/thi-ng/trio/tree/0.1.0][0.1.0]]               |
+| *Version* | *Released* | *Lein coordinates*         | *Description*        | *Tagged Github URL* |
+|-----------+------------+----------------------------+----------------------+---------------------|
+|     0.1.0 | 2015-05-25 | =[thi.ng/dstruct "0.1.0"]= | initial test release | [[https://github.com/thi-ng/dstruct/tree/0.1.0][0.1.0]]               |
 
 ** Contributors
 
