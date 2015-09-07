@@ -1,12 +1,12 @@
 #+TITLE: thi.ng/dstruct
-#+SETUPFILE: ./setup.org
+#+SETUPFILE: src/setup.org
 #+AUTHOR: Karsten Schmidt
 #+EMAIL: k@thi.ng
 
 * Contents                                                         :toc_3_gh:
  - [[#about-the-project][About the project]]
      - [[#description][Description]]
-     - [[#todo-example-usage][TODO Example usage]]
+     - [[#leiningen-coordinates][Leiningen coordinates]]
  - [[#namespaces][Namespaces]]
  - [[#tests][Tests]]
  - [[#project-definition][Project definition]]
@@ -14,7 +14,6 @@
      - [[#dependencies][Dependencies]]
          - [[#runtime][Runtime]]
          - [[#development][Development]]
-     - [[#leiningen-coordinates][Leiningen coordinates]]
      - [[#building-this-project][Building this project]]
          - [[#testing][Testing]]
          - [[#working-with-the-repl][Working with the REPL]]
@@ -30,18 +29,27 @@
 
 ** Description
 
-TBD
+This library provides the following data structures for
+Clojure/Clojurescript:
+
+- Heap
+- Interval tree
+- Unionfind (disjoint sets, connected components, undirected graph)
+
+Furthermore, a number of general purpose helper functions for
+indexing, sequencing etc. is included.
+
+This library is the result of a thi.ng projectwide
+restructuring / dissolving of the [[http://thi.ng/common][thi.ng/common]] library.
 
 *Note:* This library relies on the new conditional reader syntax of
 recent Clojure & Clojurescript versions and therefore is *not
 compatible with Clojure versions < 1.7.0*...
 
-** TODO Example usage
+** Leiningen coordinates
 
-#+BEGIN_SRC clojure
-  (require '[thi.ng.dstruct.core :as d])
-
-  ;; TBD
+#+BEGIN_SRC clojure :noweb yes :noweb-ref lein-coords
+  [thi.ng/dstruct "0.1.1"]
 #+END_SRC
 
 * Namespaces
@@ -60,11 +68,13 @@ compatible with Clojure versions < 1.7.0*...
 ** Injected properties                                             :noexport:
 
 #+BEGIN_SRC clojure :noweb-ref version
-0.1.0
+0.1.1
 #+END_SRC
+
 #+BEGIN_SRC clojure :exports none :noweb-ref project-url
 http://thi.ng/dstruct
 #+END_SRC
+
 #+BEGIN_SRC clojure :exports none :noweb yes :noweb-ref cljs-artefact-path
 target/dstruct-<<version>>.js
 #+END_SRC
@@ -73,15 +83,15 @@ target/dstruct-<<version>>.js
 *** Runtime
 **** [[https://github.com/clojure/clojure][Clojure]]
 #+BEGIN_SRC clojure :noweb-ref dep-clj
-[org.clojure/clojure "1.7.0-beta3"]
+[org.clojure/clojure "1.7.0"]
 #+END_SRC
 **** [[https://github.com/clojure/clojurescript][ClojureScript]]
 #+BEGIN_SRC clojure :noweb-ref dep-cljs
-[org.clojure/clojurescript "0.0-3291"]
+[org.clojure/clojurescript "1.7.122"]
 #+END_SRC
 **** [[https://github.com/thi-ng/math][thi.ng/math]]
 #+BEGIN_SRC clojure :noweb-ref dep-math
-[thi.ng/math "0.1.0"]
+[thi.ng/math "0.1.4"]
 #+END_SRC
 *** Development
 **** [[https://github.com/hugoduncan/criterium][Criterium]]
@@ -94,13 +104,7 @@ target/dstruct-<<version>>.js
 #+END_SRC
 **** [[https://github.com/emezeske/lein-cljsbuild][Cljsbuild]]
 #+BEGIN_SRC clojure :noweb-ref dep-cljsbuild
-[lein-cljsbuild "1.0.6"]
-#+END_SRC
-
-** Leiningen coordinates
-
-#+BEGIN_SRC clojure :noweb yes :noweb-ref lein-coords
-  [thi.ng/dstruct "0.1.0"]
+[lein-cljsbuild "1.1.0"]
 #+END_SRC
 
 ** Building this project
@@ -147,7 +151,7 @@ in the REPL via =(require 'thi.ng.dstruct... :reload)= or similar.
 
 ** Leiningen project file                                          :noexport:
 
-#+BEGIN_SRC clojure :tangle ../babel/project.clj :noweb yes :mkdirp yes :padline no
+#+BEGIN_SRC clojure :tangle babel/project.clj :noweb yes :mkdirp yes :padline no
   (defproject thi.ng/dstruct "<<version>>"
     :description  "Data structures & utilities for CLJ/CLJS"
     :url          "<<project-url>>"
@@ -158,7 +162,7 @@ in the REPL via =(require 'thi.ng.dstruct... :reload)= or similar.
                    :url "git@github.com:thi-ng/dstruct.git"}
 
     :min-lein-vesion "2.4.0"
-    
+
     :dependencies [<<dep-clj>>
                    <<dep-cljs>>
                    <<dep-math>>]
@@ -171,8 +175,7 @@ in the REPL via =(require 'thi.ng.dstruct... :reload)= or similar.
                                    <<dep-cljs-test>>]
                          :global-vars {*warn-on-reflection* true}
                          :jvm-opts ^:replace []
-                         :aliases {"cleantest" ["do" "clean," "test," "cljsbuild" "test"]}
-                  }}
+                         :aliases {"cleantest" ["do" "clean," "test," "cljsbuild" "test"]}}}
 
     :cljsbuild    {:builds [{:id "simple"
                              :source-paths ["src" "test"]
@@ -189,7 +192,7 @@ in the REPL via =(require 'thi.ng.dstruct... :reload)= or similar.
 
 ** ClojureScript HTML harness                                      :noexport:
 
-#+BEGIN_SRC html :tangle ../babel/index.html :noweb yes :mkdirp yes :padline no
+#+BEGIN_SRC html :tangle babel/index.html :noweb yes :mkdirp yes :padline no
   <!DOCTYPE html>
   <html lang="en">
     <head>
@@ -208,14 +211,14 @@ symbol =version= holding the version string defined above:
 
 #+BEGIN_SRC clojure :noweb yes
   (use '[thi.ng.dstruct.version])
-  
+
   (prn version)
-  ; "<<version>>"
+  ;; "<<version>>"
 #+END_SRC
 
 *** Version namespace                                              :noexport:
 
-#+BEGIN_SRC clojure :tangle ../babel/src/thi/ng/dstruct/version.cljc :noweb yes :mkdirp yes :padline no :exports none
+#+BEGIN_SRC clojure :tangle babel/src/thi/ng/dstruct/version.cljc :noweb yes :mkdirp yes :padline no :exports none
   (ns thi.ng.dstruct.version)
 
   (def version "<<version>>")
@@ -223,9 +226,10 @@ symbol =version= holding the version string defined above:
 
 ** Release history
 
-| *Version* | *Released* | *Lein coordinates*         | *Description*        | *Tagged Github URL* |
-|-----------+------------+----------------------------+----------------------+---------------------|
-|     0.1.0 | 2015-05-25 | =[thi.ng/dstruct "0.1.0"]= | initial test release | [[https://github.com/thi-ng/dstruct/tree/0.1.0][0.1.0]]               |
+| *Version* | *Released* | *Description*                            |
+|-----------+------------+------------------------------------------|
+|     0.1.1 | 2015-09-07 | bugfix DisjointSet, updated dependencies |
+|     0.1.0 | 2015-05-25 | initial test release                     |
 
 ** Contributors
 

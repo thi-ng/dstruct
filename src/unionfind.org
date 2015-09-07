@@ -51,7 +51,7 @@
     (register
       [_ p]
       (if (canonical _ p) _
-          (DisjointSet. (assoc index p p) (assoc components p [p]))))
+          (DisjointSet. (assoc index p p) (assoc components p #{p}))))
     (unregister [_ p]
       (if (canonical _ p)
         (if-let [comp (components p)]
@@ -97,4 +97,3 @@
 
   <<disj-set>>
 #+END_SRC
-
