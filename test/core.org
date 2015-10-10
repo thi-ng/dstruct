@@ -20,13 +20,14 @@
   (ns thi.ng.dstruct.test.core
     (:require
      [thi.ng.dstruct.core :as d]
-     [thi.ng.dstruct.heap :as h]
      [thi.ng.dstruct.intervaltree :as i]
      [thi.ng.dstruct.unionfind :as u]
-     #?(:clj
-        [clojure.test :refer :all]
-        :cljs
-        [cemerick.cljs.test :refer-macros [is deftest]])))
+     [thi.ng.dstruct.streams :as str]
+     #?@(:clj
+         [[thi.ng.dstruct.heap :as h]
+          [clojure.test :refer :all]]
+         :cljs
+         [[cemerick.cljs.test :refer-macros [is deftest]]])))
 
   <<test>>
 #+END_SRC
