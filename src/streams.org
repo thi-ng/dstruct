@@ -82,7 +82,7 @@ underlying =ArrayBuffer=. This protocol is not used in Clojure.
        IInputStream
        (read-uint8
          [_]
-         (byte->int (.readByte in)))
+         (byte->int (.read in)))
        (read-uint16-le
          [_]
          (.read in buf 0 2)
@@ -255,31 +255,31 @@ the backing buffer up until the current write position.
          [_ x] (.write out (unchecked-byte (bit-and x 0xff))) _)
        (write-uint16-le
          [_ x]
-         (aset-byte bytes 0 (unchecked-byte (bit-and x 0xff)))
-         (aset-byte bytes 1 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
+         (aset-byte buf 0 (unchecked-byte (bit-and x 0xff)))
+         (aset-byte buf 1 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
          (.write out buf 0 2)
          _)
        (write-uint16-be
          [_ x]
-         (aset-byte bytes 1 (unchecked-byte (bit-and x 0xff)))
-         (aset-byte bytes 0 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
+         (aset-byte buf 1 (unchecked-byte (bit-and x 0xff)))
+         (aset-byte buf 0 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
          (.write out buf 0 2)
          _)
        (write-uint32-le
          [_ x]
-         (aset-byte bytes 0 (unchecked-byte (bit-and x 0xff)))
-         (aset-byte bytes 1 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
-         (aset-byte bytes 2 (unchecked-byte (bit-and (unsigned-bit-shift-right x 16) 0xff)))
-         (aset-byte bytes 3 (unchecked-byte (unsigned-bit-shift-right x 24)))
-         (.write out 0 4)
+         (aset-byte buf 0 (unchecked-byte (bit-and x 0xff)))
+         (aset-byte buf 1 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
+         (aset-byte buf 2 (unchecked-byte (bit-and (unsigned-bit-shift-right x 16) 0xff)))
+         (aset-byte buf 3 (unchecked-byte (unsigned-bit-shift-right x 24)))
+         (.write out buf 0 4)
          _)
        (write-uint32-be
          [_ x]
-         (aset-byte bytes 3 (unchecked-byte (bit-and x 0xff)))
-         (aset-byte bytes 2 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
-         (aset-byte bytes 1 (unchecked-byte (bit-and (unsigned-bit-shift-right x 16) 0xff)))
-         (aset-byte bytes 0 (unchecked-byte (unsigned-bit-shift-right x 24)))
-         (.write out 0 4)
+         (aset-byte buf 3 (unchecked-byte (bit-and x 0xff)))
+         (aset-byte buf 2 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
+         (aset-byte buf 1 (unchecked-byte (bit-and (unsigned-bit-shift-right x 16) 0xff)))
+         (aset-byte buf 0 (unchecked-byte (unsigned-bit-shift-right x 24)))
+         (.write out buf 0 4)
          _)
        (write-float-le
          [_ x]
