@@ -145,31 +145,31 @@ underlying =ArrayBuffer=. This protocol is not used in Clojure.
        (read-uint8
          [_]
          (ensure-readable _ 1)
-         (let [x (.getUInt8 dv pos)]
+         (let [x (.getUint8 dv pos)]
            (set! pos (inc pos))
            x))
        (read-uint16-le
          [_]
          (ensure-readable _ 2)
-         (let [x (.getUInt16 dv pos true)]
+         (let [x (.getUint16 dv pos true)]
            (set! pos (+ pos 2))
            x))
        (read-uint16-be
          [_]
          (ensure-readable _ 2)
-         (let [x (.getUInt16 dv pos)]
+         (let [x (.getUint16 dv pos)]
            (set! pos (+ pos 2))
            x))
        (read-uint32-le
          [_]
          (ensure-readable _ 4)
-         (let [x (.getUInt32 dv pos true)]
+         (let [x (.getUint32 dv pos true)]
            (set! pos (+ pos 4))
            x))
        (read-uint32-be
          [_]
          (ensure-readable _ 4)
-         (let [x (.getUInt32 dv pos)]
+         (let [x (.getUint32 dv pos)]
            (set! pos (+ pos 4))
            x))
        (read-float-le
@@ -346,31 +346,31 @@ the backing buffer up until the current write position.
        (write-uint8
          [_ x]
          (ensure-size _ 1)
-         (.setUInt8 dv pos x)
+         (.setUint8 dv pos x)
          (set! pos (inc pos))
          _)
        (write-uint16-le
          [_ x]
          (ensure-size _ 2)
-         (.setUInt16 dv pos x true)
+         (.setUint16 dv pos x true)
          (set! pos (+ pos 2))
          _)
        (write-uint16-be
          [_ x]
          (ensure-size _ 2)
-         (.setUInt16 dv pos x)
+         (.setUint16 dv pos x)
          (set! pos (+ pos 2))
          _)
        (write-uint32-le
          [_ x]
          (ensure-size _ 4)
-         (.setUInt32 dv pos x true)
+         (.setUint32 dv pos x true)
          (set! pos (+ pos 4))
          _)
        (write-uint32-be
          [_ x]
          (ensure-size _ 4)
-         (.setUInt32 dv pos x)
+         (.setUint32 dv pos x)
          (set! pos (+ pos 4))
          _)
        (write-float-le
