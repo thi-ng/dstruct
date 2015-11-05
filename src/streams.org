@@ -7,6 +7,7 @@
          - [[#constructor][Constructor]]
      - [[#output-stream][Output stream]]
          - [[#constructor][Constructor]]
+     - [[#data-url-conversion][Data URL conversion]]
      - [[#helpers][Helpers]]
      - [[#complete-namespace-definition][Complete namespace definition]]
 
@@ -335,12 +336,13 @@ the backing buffer up until the current write position.
        IOutputStream
        (write-utf8-bytes
          [_ str]
-         (let [utf8 (utf8-str str)]
+         (let [utf8 (utf8-str str)
+               len  (count utf8)]
            (ensure-size _ (count utf8))
-           (loop [utf8 utf8, p pos]
-             (if utf8
-               (do (.setUint8 dv p (first utf8))
-                   (recur (next utf8) (inc p)))
+           (loop [i 0, p pos]
+             (if (< i len)
+               (do (.setUint8 dv p (.charCodeAt utf8 i))
+                   (recur (inc i) (inc p)))
                (set! pos p))))
          _)
        (write-uint8
@@ -429,7 +431,7 @@ the backing buffer up until the current write position.
          _)
        IStreamPosition
        (skip
-         [_ x] (ensure-size _ x) _)
+         [_ x] (ensure-size _ x) (set! pos (+ pos x)) _)
        (get-position
          [_] pos)
        IBuffer
@@ -454,6 +456,38 @@ the backing buffer up until the current write position.
         (OutputStreamWrapper. buf (js/DataView. buf) pos))))
 #+END_SRC
 
+** Data URL conversion
+
+#+BEGIN_SRC clojure :noweb-ref dataurl
+  #?(:cljs
+     (defn as-data-url
+       "Takes an input or outputstream and optional mime type, returns
+    contents as data url wrapped in a volatile. The volatile's value is
+    initially nil and might only become realized after the function
+    returned."
+       ([stream]
+        (as-data-url stream "application/octet-stream"))
+       ([stream mime]
+        (let [fr  (js/FileReader.)
+              uri (volatile! nil)]
+          (set! (.-onload fr) (fn [e] (vreset! uri (-> e .-target .-result))))
+          (.readAsDataURL fr (js/Blob. #js [(get-buffer stream)] #js {"type" mime}))
+          uri))))
+
+  #?(:cljs
+     (defn as-data-url-async
+       "Takes an input or outputstream, core.async channel and optional
+    mime type, places contents as data url string onto channel, returns
+    channel."
+       ([stream chan]
+        (as-data-url-async stream chan "application/octet-stream"))
+       ([stream chan mime]
+        (let [fr (js/FileReader.)]
+          (set! (.-onload fr) (fn [e] (async/put! chan (-> e .-target .-result))))
+          (.readAsDataURL fr (js/Blob. #js [(get-buffer stream)] #js {"type" mime}))
+          chan))))
+#+END_SRC
+
 ** Helpers
 
 #+BEGIN_SRC clojure :noweb-ref helpers
@@ -466,7 +500,7 @@ the backing buffer up until the current write position.
 
 #+BEGIN_SRC clojure :noweb-ref cljs-helpers
   #?(:cljs
-     (defn ensure-readable
+     (defn ^:private ensure-readable
        [^InputStreamWrapper in size]
        (if (>= (+ (.-pos in) size) (.-byteLength (.-buf in)))
          (throw
@@ -476,7 +510,7 @@ the backing buffer up until the current write position.
                 ", but length: " (.-byteLength (.-buf in))))))))
 
   #?(:cljs
-     (defn ensure-size
+     (defn ^:private ensure-size
        [^OutputStreamWrapper out size]
        (let [len (.-byteLength (.-buf out))]
          (if (> (+ (.-pos out) size) len)
@@ -492,7 +526,10 @@ the backing buffer up until the current write position.
   (ns thi.ng.dstruct.streams
     #?(:clj
        (:import
-        [java.io OutputStream InputStream])))
+        [java.io OutputStream InputStream])
+       :cljs
+       (:require
+        [cljs.core.async :as async])))
 
   (declare ensure-readable ensure-size)
 
@@ -505,6 +542,8 @@ the backing buffer up until the current write position.
   <<output>>
 
   <<cljs-helpers>>
+
+  <<dataurl>>
 
   <<ctors>>
 #+END_SRC

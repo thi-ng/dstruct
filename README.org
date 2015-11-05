@@ -89,6 +89,10 @@ target/dstruct-<<version>>.js
 #+BEGIN_SRC clojure :noweb-ref dep-cljs
 [org.clojure/clojurescript "1.7.122"]
 #+END_SRC
+**** [[https://github.com/clojure/core.async][core.async]]
+#+BEGIN_SRC clojure :noweb-ref dep-async
+[org.clojure/core.async "0.2.371"]
+#+END_SRC
 **** [[https://github.com/thi-ng/math][thi.ng/math]]
 #+BEGIN_SRC clojure :noweb-ref dep-math
 [thi.ng/math "0.1.4"]
@@ -165,7 +169,8 @@ in the REPL via =(require 'thi.ng.dstruct... :reload)= or similar.
 
     :dependencies [<<dep-clj>>
                    <<dep-cljs>>
-                   <<dep-math>>]
+                   <<dep-math>>
+                   <<dep-async>>]
 
     :source-paths ["src"]
     :test-paths   ["test"]
