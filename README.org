@@ -68,7 +68,7 @@ compatible with Clojure versions < 1.7.0*...
 ** Injected properties                                             :noexport:
 
 #+BEGIN_SRC clojure :noweb-ref version
-0.1.2-SNAPSHOT
+0.1.3
 #+END_SRC
 
 #+BEGIN_SRC clojure :exports none :noweb-ref project-url
@@ -83,11 +83,11 @@ target/dstruct-<<version>>.js
 *** Runtime
 **** [[https://github.com/clojure/clojure][Clojure]]
 #+BEGIN_SRC clojure :noweb-ref dep-clj
-[org.clojure/clojure "1.7.0"]
+[org.clojure/clojure "1.8.0"]
 #+END_SRC
 **** [[https://github.com/clojure/clojurescript][ClojureScript]]
 #+BEGIN_SRC clojure :noweb-ref dep-cljs
-[org.clojure/clojurescript "1.7.122"]
+[org.clojure/clojurescript "1.7.228"]
 #+END_SRC
 **** [[https://github.com/clojure/core.async][core.async]]
 #+BEGIN_SRC clojure :noweb-ref dep-async
@@ -108,7 +108,7 @@ target/dstruct-<<version>>.js
 #+END_SRC
 **** [[https://github.com/emezeske/lein-cljsbuild][Cljsbuild]]
 #+BEGIN_SRC clojure :noweb-ref dep-cljsbuild
-[lein-cljsbuild "1.1.0"]
+[lein-cljsbuild "1.1.2"]
 #+END_SRC
 
 ** Building this project
@@ -186,6 +186,8 @@ in the REPL via =(require 'thi.ng.dstruct... :reload)= or similar.
                              :source-paths ["src" "test"]
                              :compiler {:output-to "<<cljs-artefact-path>>"
                                         :optimizations :whitespace
+                                        :parallel-build true
+                                        :static-fns true
                                         :pretty-print true}}]
                    :test-commands {"unit-tests" ["phantomjs" :runner "<<cljs-artefact-path>>"]}}
 
@@ -233,6 +235,8 @@ symbol =version= holding the version string defined above:
 
 | *Version* | *Released* | *Description*                            |
 |-----------+------------+------------------------------------------|
+|     0.1.3 | 2016-03-01 | add BidirIndex, update deps              |
+|     0.1.2 | 2015-11-05 | add clj/cljs i/o stream abstractions     |
 |     0.1.1 | 2015-09-07 | bugfix DisjointSet, updated dependencies |
 |     0.1.0 | 2015-05-25 | initial test release                     |
 

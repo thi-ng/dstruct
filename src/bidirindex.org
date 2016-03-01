@@ -1,0 +1,119 @@
+#+SETUPFILE: setup.org
+
+* Contents                                                         :toc_4_gh:
+ - [[#namespace-thingdstructbidirindex][Namespace: thi.ng.dstruct.bidirindex]]
+     - [[#protocols][Protocols]]
+     - [[#implementation][Implementation]]
+     - [[#constructors][Constructors]]
+     - [[#indexing-operations--helper-functions][Indexing operations & helper functions]]
+     - [[#complete-namespace-definition][Complete namespace definition]]
+
+* Namespace: thi.ng.dstruct.bidirindex
+
+This namespace provides a bi-directional index between values to
+arbitrary IDs, generated via an user supplied ID generator function.
+The default implementation provides a monotonically increasing counter
+as ID generator.
+
+** Protocols
+
+#+BEGIN_SRC clojure :noweb-ref protos
+  (defprotocol PIndex
+    (index-item [_ item])
+    (unindex-item [_ item])
+    (reindex-item [_ old new]))
+#+END_SRC
+
+** Implementation
+
+The =BidirIndex= implementation consists of two hash maps:
+
+- =v->id= - maps indexed items to their respective ID
+- =id->v= - provides reverse mapping from ID to index value
+
+Since the index is implemented as =defrecord=, both fields can be
+accessed via their respective keywords.
+
+#+BEGIN_SRC clojure :noweb-ref impl
+  (defrecord BidirIndex [v->id id->v id-gen]
+    PIndex
+    (index-item
+        [_ item]
+      (let [id (get v->id item)]
+        (if id
+          [_ id]
+          (let [id (id-gen)]
+            [(BidirIndex.
+              (assoc v->id item id)
+              (assoc id->v id item)
+              id-gen)
+             id]))))
+    (unindex-item
+        [_ item]
+      (let [id (get v->id item)]
+        (if id
+          (BidirIndex.
+           (dissoc v->id item)
+           (dissoc id->v id)
+           id-gen)
+          _)))
+    (reindex-item
+        [_ item newitem]
+      (let [id (get v->id item)]
+        (if id
+          (BidirIndex.
+           (-> v->id (dissoc item) (assoc newitem id))
+           (assoc id->v id newitem)
+           id-gen)
+          _))))
+#+END_SRC
+
+** Constructors
+
+#+BEGIN_SRC clojure :noweb-ref ctors
+  (defn counter
+    ([] (counter 0))
+    ([start] (let [id (volatile! (dec start))] #(vswap! id inc))))
+
+  (defn bidir-index
+    ([] (bidir-index (counter)))
+    ([id-gen] (BidirIndex. (hash-map) (hash-map) id-gen))
+    ([id-gen items] (reduce #(first (index-item %1 %2)) (bidir-index id-gen) items)))
+#+END_SRC
+
+** Indexing operations & helper functions
+
+#+BEGIN_SRC clojure :noweb-ref ops
+  (defn index-items
+    [index coll]
+    (reduce
+     (fn [[idx ids] v]
+       (let [[idx id] (index-item idx v)]
+         [idx (conj ids id)]))
+     [index []] coll))
+
+  (defn index-attribs
+    [index attribs]
+    (reduce
+     (fn [[attr aids] [id v]]
+       (let [[idx ids] (index-items (or (get attr id) (bidir-index)) v)]
+         [(assoc attr id idx) (assoc aids id ids)]))
+     [index {}] attribs))
+
+  (defn attrib-values
+    [index ids] (mapv (:id->v index) ids))
+#+END_SRC
+
+** Complete namespace definition
+
+#+BEGIN_SRC clojure :tangle ../babel/src/thi/ng/dstruct/bidirindex.cljc :noweb yes :mkdirp yes :padline no
+  (ns thi.ng.dstruct.bidirindex)
+
+  <<protos>>
+
+  <<impl>>
+
+  <<ctors>>
+
+  <<ops>>
+#+END_SRC
