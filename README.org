@@ -7,6 +7,8 @@
  - [[#about-the-project][About the project]]
      - [[#description][Description]]
      - [[#leiningen-coordinates][Leiningen coordinates]]
+         - [[#latest-stable][Latest stable]]
+         - [[#latest-snapshot][Latest snapshot]]
  - [[#namespaces][Namespaces]]
  - [[#tests][Tests]]
  - [[#project-definition][Project definition]]
@@ -50,8 +52,15 @@ compatible with Clojure versions < 1.7.0*...
 
 ** Leiningen coordinates
 
+*** Latest stable
+
 #+BEGIN_SRC clojure :noweb yes :noweb-ref lein-coords
-  [thi.ng/dstruct "0.1.1"]
+  [thi.ng/dstruct "0.1.2"]
+#+END_SRC
+
+*** Latest snapshot
+#+BEGIN_SRC clojure :noweb yes :noweb-ref lein-coords
+  [thi.ng/dstruct "0.1.3-SNAPSHOT"]
 #+END_SRC
 
 * Namespaces
