@@ -4,64 +4,112 @@
  - [[#namespace-thingdstructbidirindex][Namespace: thi.ng.dstruct.bidirindex]]
      - [[#protocols][Protocols]]
      - [[#implementation][Implementation]]
+         - [[#monotonicbidirindex][MonotonicBidirIndex]]
+         - [[#custombidirindex][CustomBidirIndex]]
      - [[#constructors][Constructors]]
+     - [[#id-generators][ID generators]]
      - [[#indexing-operations--helper-functions][Indexing operations & helper functions]]
      - [[#complete-namespace-definition][Complete namespace definition]]
 
 * Namespace: thi.ng.dstruct.bidirindex
 
-This namespace provides a bi-directional index between values to
-arbitrary IDs, generated via an user supplied ID generator function.
-The default implementation provides a monotonically increasing counter
-as ID generator.
+This namespace provides bi-directional index implementations between
+values to IDs and vice versa.
 
 ** Protocols
 
 #+BEGIN_SRC clojure :noweb-ref protos
   (defprotocol PIndex
-    (index-item [_ item])
-    (unindex-item [_ item])
-    (reindex-item [_ old new]))
+    (index [_ item]
+      "Attempts to find item in index and adds it to index if not found.
+      Returns 2-elem vector of [updated-index item-id].")
+    (unindex [_ item]
+      "Attempts to remove item from index. Does nothing if item can't be
+      found. Returns updated index.")
+    (reindex [_ old new]
+      "Attempts to re-associate the ID of old item with new item. Does
+      nothing if old item can't be found. Returns update index."))
 #+END_SRC
 
 ** Implementation
 
-The =BidirIndex= implementation consists of two hash maps:
+The =PIndex= implementations below each consists of two hash maps to create the 2-way mapping:
 
 - =v->id= - maps indexed items to their respective ID
 - =id->v= - provides reverse mapping from ID to index value
 
-Since the index is implemented as =defrecord=, both fields can be
+Since the indices are implemented as =defrecord=, both fields can be
 accessed via their respective keywords.
 
+*** MonotonicBidirIndex
+
 #+BEGIN_SRC clojure :noweb-ref impl
-  (defrecord BidirIndex [v->id id->v id-gen]
+  (defrecord MonotonicBidirIndex [v->id id->v next]
     PIndex
-    (index-item
+    (index
         [_ item]
       (let [id (get v->id item)]
         (if id
           [_ id]
-          (let [id (id-gen)]
-            [(BidirIndex.
+          [(MonotonicBidirIndex.
+            (assoc v->id item next)
+            (assoc id->v next item)
+            (inc next))
+           next])))
+    (unindex
+        [_ item]
+      (let [id (get v->id item)]
+        (if id
+          (MonotonicBidirIndex.
+           (dissoc v->id item)
+           (dissoc id->v id)
+           next)
+          _)))
+    (reindex
+        [_ item newitem]
+      (let [id (get v->id item)]
+        (if id
+          (MonotonicBidirIndex.
+           (-> v->id (dissoc item) (assoc newitem id))
+           (assoc id->v id newitem)
+           next)
+          _))))
+#+END_SRC
+
+*** CustomBidirIndex
+
+IDs for this implementation are generated via an user supplied
+function which is called for every new item to be indexed. The default
+implementation provides a monotonically increasing counter generator.
+
+#+BEGIN_SRC clojure :noweb-ref impl
+  (defrecord CustomBidirIndex [v->id id->v id-gen]
+    PIndex
+    (index
+        [_ item]
+      (let [id (get v->id item)]
+        (if id
+          [_ id]
+          (let [id (id-gen item)]
+            [(CustomBidirIndex.
               (assoc v->id item id)
               (assoc id->v id item)
               id-gen)
              id]))))
-    (unindex-item
+    (unindex
         [_ item]
       (let [id (get v->id item)]
         (if id
-          (BidirIndex.
+          (CustomBidirIndex.
            (dissoc v->id item)
            (dissoc id->v id)
            id-gen)
           _)))
-    (reindex-item
+    (reindex
         [_ item newitem]
       (let [id (get v->id item)]
         (if id
-          (BidirIndex.
+          (CustomBidirIndex.
            (-> v->id (dissoc item) (assoc newitem id))
            (assoc id->v id newitem)
            id-gen)
@@ -71,37 +119,48 @@ accessed via their respective keywords.
 ** Constructors
 
 #+BEGIN_SRC clojure :noweb-ref ctors
+  (defn monotonic-index
+    ([] (monotonic-index 0))
+    ([start] (MonotonicBidirIndex. (hash-map) (hash-map) start))
+    ([start items] (reduce #(first (index %1 %2)) (monotonic-index start) items)))
+
+  (defn custom-index
+    ([] (custom-index (counter)))
+    ([id-gen] (CustomBidirIndex. (hash-map) (hash-map) id-gen))
+    ([id-gen items] (reduce #(first (index %1 %2)) (custom-index id-gen) items)))
+#+END_SRC
+
+** ID generators
+
+#+BEGIN_SRC clojure :noweb-ref idgen
   (defn counter
     ([] (counter 0))
-    ([start] (let [id (volatile! (dec start))] #(vswap! id inc))))
-
-  (defn bidir-index
-    ([] (bidir-index (counter)))
-    ([id-gen] (BidirIndex. (hash-map) (hash-map) id-gen))
-    ([id-gen items] (reduce #(first (index-item %1 %2)) (bidir-index id-gen) items)))
+    ([start] (let [id (volatile! (dec start))] (fn [_] (vswap! id inc)))))
 #+END_SRC
 
 ** Indexing operations & helper functions
 
 #+BEGIN_SRC clojure :noweb-ref ops
-  (defn index-items
-    [index coll]
+  (defn index-coll
+    [idx coll]
     (reduce
      (fn [[idx ids] v]
-       (let [[idx id] (index-item idx v)]
+       (let [[idx id] (index idx v)]
          [idx (conj ids id)]))
-     [index []] coll))
+     [idx []] coll))
 
   (defn index-attribs
-    [index attribs]
-    (reduce
-     (fn [[attr aids] [id v]]
-       (let [[idx ids] (index-items (or (get attr id) (bidir-index)) v)]
-         [(assoc attr id idx) (assoc aids id ids)]))
-     [index {}] attribs))
+    ([idx attribs]
+     (index-attribs idx monotonic-index attribs))
+    ([idx ctor attribs]
+     (reduce-kv
+      (fn [[attr aids] id v]
+        (let [[idx ids] (index-coll (or (get attr id) (ctor)) v)]
+          [(assoc attr id idx) (assoc aids id ids)]))
+      [idx {}] attribs)))
 
   (defn attrib-values
-    [index ids] (mapv (:id->v index) ids))
+    [idx ids] (mapv (:id->v idx) ids))
 #+END_SRC
 
 ** Complete namespace definition
@@ -112,6 +171,8 @@ accessed via their respective keywords.
   <<protos>>
 
   <<impl>>
+
+  <<idgen>>
 
   <<ctors>>
 
