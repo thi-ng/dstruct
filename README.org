@@ -233,12 +233,12 @@ symbol =version= holding the version string defined above:
 
 ** Release history
 
-| *Version* | *Released* | *Description*                            |
-|-----------+------------+------------------------------------------|
-|     0.1.3 | 2016-03-01 | add BidirIndex, update deps              |
-|     0.1.2 | 2015-11-05 | add clj/cljs i/o stream abstractions     |
-|     0.1.1 | 2015-09-07 | bugfix DisjointSet, updated dependencies |
-|     0.1.0 | 2015-05-25 | initial test release                     |
+|      *Version* | *Released* | *Description*                            |
+|----------------+------------+------------------------------------------|
+| 0.1.3-SNAPSHOT | 2016-03-02 | add BidirIndex, update deps              |
+|          0.1.2 | 2015-11-05 | add clj/cljs i/o stream abstractions     |
+|          0.1.1 | 2015-09-07 | bugfix DisjointSet, updated dependencies |
+|          0.1.0 | 2015-05-25 | initial test release                     |
 
 ** Contributors
 
