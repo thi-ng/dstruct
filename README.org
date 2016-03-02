@@ -32,8 +32,10 @@
 This library provides the following data structures for
 Clojure/Clojurescript:
 
+- Bi-directional index / map
 - Heap
 - Interval tree
+- I/O stream abstractions
 - Unionfind (disjoint sets, connected components, undirected graph)
 
 Furthermore, a number of general purpose helper functions for
@@ -54,10 +56,12 @@ compatible with Clojure versions < 1.7.0*...
 
 * Namespaces
 
-- [[./core.org][thi.ng.dstruct.core]]
-- [[./heap.org][thi.ng.dstruct.heap]]
-- [[./intervaltree.org][thi.ng.dstruct.intervaltree]]
-- [[./unionfind.org][thi.ng.dstruct.unionfind]]
+- [[./src/core.org][thi.ng.dstruct.core]]
+- [[./src/bidirindex.org][thi.ng.dstruct.bidirindex]]
+- [[./src/heap.org][thi.ng.dstruct.heap]]
+- [[./src/intervaltree.org][thi.ng.dstruct.intervaltree]]
+- [[./src/streams.org][thi.ng.dstruct.streams]]
+- [[./src/unionfind.org][thi.ng.dstruct.unionfind]]
 
 * Tests
 
