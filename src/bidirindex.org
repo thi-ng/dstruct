@@ -36,7 +36,7 @@ values to IDs and vice versa.
 The =PIndex= implementations below each consists of two hash maps to create the 2-way mapping:
 
 - =v->id= - maps indexed items to their respective ID
-- =id->v= - provides reverse mapping from ID to index value
+- =id->v= - provides reverse mapping from ID to index value (uses =sorted-map=)
 
 Since the indices are implemented as =defrecord=, both fields can be
 accessed via their respective keywords.
@@ -121,12 +121,12 @@ implementation provides a monotonically increasing counter generator.
 #+BEGIN_SRC clojure :noweb-ref ctors
   (defn monotonic-index
     ([] (monotonic-index 0))
-    ([start] (MonotonicBidirIndex. (hash-map) (hash-map) start))
+    ([start] (MonotonicBidirIndex. (hash-map) (sorted-map) start))
     ([start items] (reduce #(first (index %1 %2)) (monotonic-index start) items)))
 
   (defn custom-index
     ([] (custom-index (counter)))
-    ([id-gen] (CustomBidirIndex. (hash-map) (hash-map) id-gen))
+    ([id-gen] (CustomBidirIndex. (hash-map) (sorted-map) id-gen))
     ([id-gen items] (reduce #(first (index %1 %2)) (custom-index id-gen) items)))
 #+END_SRC
 
