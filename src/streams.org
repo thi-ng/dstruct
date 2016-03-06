@@ -70,9 +70,9 @@ For CLJS, the =IBuffer= protocol provides access to a streams
 underlying =ArrayBuffer=. This protocol is not used in Clojure.
 
 #+BEGIN_SRC clojure :noweb-ref protocols
-  #?(:cljs
-     (defprotocol IBuffer
-       (get-buffer [_])))
+  (defprotocol IBuffer
+    (get-buffer [_])
+    (into-buffer [_ dest stride idx]))
 #+END_SRC
 
 ** Input stream
@@ -250,24 +250,24 @@ the backing buffer up until the current write position.
      (deftype OutputStreamWrapper [^OutputStream out ^bytes buf]
        IOutputStream
        (write-utf8-bytes
-         [_ str]
+           [_ str]
          (.write out (.getBytes ^String str "UTF-8")) _)
        (write-uint8
-         [_ x] (.write out (unchecked-byte (bit-and x 0xff))) _)
+           [_ x] (.write out (unchecked-byte (bit-and x 0xff))) _)
        (write-uint16-le
-         [_ x]
+           [_ x]
          (aset-byte buf 0 (unchecked-byte (bit-and x 0xff)))
          (aset-byte buf 1 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
          (.write out buf 0 2)
          _)
        (write-uint16-be
-         [_ x]
+           [_ x]
          (aset-byte buf 1 (unchecked-byte (bit-and x 0xff)))
          (aset-byte buf 0 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
          (.write out buf 0 2)
          _)
        (write-uint32-le
-         [_ x]
+           [_ x]
          (aset-byte buf 0 (unchecked-byte (bit-and x 0xff)))
          (aset-byte buf 1 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
          (aset-byte buf 2 (unchecked-byte (bit-and (unsigned-bit-shift-right x 16) 0xff)))
@@ -275,7 +275,7 @@ the backing buffer up until the current write position.
          (.write out buf 0 4)
          _)
        (write-uint32-be
-         [_ x]
+           [_ x]
          (aset-byte buf 3 (unchecked-byte (bit-and x 0xff)))
          (aset-byte buf 2 (unchecked-byte (bit-and (unsigned-bit-shift-right x 8) 0xff)))
          (aset-byte buf 1 (unchecked-byte (bit-and (unsigned-bit-shift-right x 16) 0xff)))
@@ -283,50 +283,50 @@ the backing buffer up until the current write position.
          (.write out buf 0 4)
          _)
        (write-float-le
-         [_ x]
-         (write-uint32-le _ (Float/floatToRawIntBits x)))
+           [_ x]
+         (write-uint32-le _ (Float/floatToRawIntBits (float x))))
        (write-float-be
-         [_ x]
-         (write-uint32-be _ (Float/floatToRawIntBits x)))
+           [_ x]
+         (write-uint32-be _ (Float/floatToRawIntBits (float x))))
        (write-double-le
-         [_ x]
-         (let [x (Double/doubleToRawLongBits x)]
+           [_ x]
+         (let [x (Double/doubleToRawLongBits (double x))]
            (write-uint32-le _ (unchecked-int (bit-and x 0xffffffff)))
            (write-uint32-le _ (unchecked-int (bit-and (unsigned-bit-shift-right x 32) 0xffffffff)))
            _))
        (write-double-be
-         [_ x]
-         (let [x (Double/doubleToRawLongBits x)]
+           [_ x]
+         (let [x (Double/doubleToRawLongBits (double x))]
            (write-uint32-be _ (unchecked-int (bit-and (unsigned-bit-shift-right x 32) 0xffffffff)))
            (write-uint32-be _ (unchecked-int (bit-and x 0xffffffff)))
            _))
        (write-vec2f-le
-         [_ [x y]]
+           [_ [x y]]
          (write-float-le _ x)
          (write-float-le _ y)
          _)
        (write-vec2f-be
-         [_ [x y]]
+           [_ [x y]]
          (write-float-be _ x)
          (write-float-be _ y)
          _)
        (write-vec3f-le
-         [_ [x y z]]
+           [_ [x y z]]
          (write-float-le _ x)
          (write-float-le _ y)
          (write-float-le _ z)
          _)
        (write-vec3f-be
-         [_ [x y z]]
+           [_ [x y z]]
          (write-float-be _ x)
          (write-float-be _ y)
          (write-float-be _ z)
          _)
        IStreamPosition
        (skip
-         [_ x] (.write out (byte-array x)) _)
+           [_ x] (.write out (byte-array x)) _)
        (get-position
-         [_] (throw (UnsupportedOperationException.))))
+           [_] (throw (UnsupportedOperationException.))))
 
      :cljs
      (deftype OutputStreamWrapper
@@ -335,7 +335,7 @@ the backing buffer up until the current write position.
           ^:mutable pos]
        IOutputStream
        (write-utf8-bytes
-         [_ str]
+           [_ str]
          (let [utf8 (utf8-str str)
                len  (count utf8)]
            (ensure-size _ (count utf8))
@@ -346,75 +346,75 @@ the backing buffer up until the current write position.
                (set! pos p))))
          _)
        (write-uint8
-         [_ x]
+           [_ x]
          (ensure-size _ 1)
          (.setUint8 dv pos x)
          (set! pos (inc pos))
          _)
        (write-uint16-le
-         [_ x]
+           [_ x]
          (ensure-size _ 2)
          (.setUint16 dv pos x true)
          (set! pos (+ pos 2))
          _)
        (write-uint16-be
-         [_ x]
+           [_ x]
          (ensure-size _ 2)
          (.setUint16 dv pos x)
          (set! pos (+ pos 2))
          _)
        (write-uint32-le
-         [_ x]
+           [_ x]
          (ensure-size _ 4)
          (.setUint32 dv pos x true)
          (set! pos (+ pos 4))
          _)
        (write-uint32-be
-         [_ x]
+           [_ x]
          (ensure-size _ 4)
          (.setUint32 dv pos x)
          (set! pos (+ pos 4))
          _)
        (write-float-le
-         [_ x]
+           [_ x]
          (ensure-size _ 4)
          (.setFloat32 dv pos x true)
          (set! pos (+ pos 4))
          _)
        (write-float-be
-         [_ x]
+           [_ x]
          (ensure-size _ 4)
          (.setFloat32 dv pos x)
          (set! pos (+ pos 4))
          _)
        (write-double-le
-         [_ x]
+           [_ x]
          (ensure-size _ 8)
          (.setFloat64 dv pos x true)
          (set! pos (+ pos 8))
          _)
        (write-double-be
-         [_ x]
+           [_ x]
          (ensure-size _ 8)
          (.setFloat64 dv pos x)
          (set! pos (+ pos 8))
          _)
        (write-vec2f-le
-         [_ [x y]]
+           [_ [x y]]
          (ensure-size _ 8)
          (.setFloat32 dv pos x true)
          (.setFloat32 dv (+ pos 4) y true)
          (set! pos (+ pos 8))
          _)
        (write-vec2f-be
-         [_ [x y]]
+           [_ [x y]]
          (ensure-size _ 8)
          (.setFloat32 dv pos x)
          (.setFloat32 dv (+ pos 4) y)
          (set! pos (+ pos 8))
          _)
        (write-vec3f-le
-         [_ [x y z]]
+           [_ [x y z]]
          (ensure-size _ 12)
          (.setFloat32 dv pos x true)
          (.setFloat32 dv (+ pos 4) y true)
@@ -422,7 +422,7 @@ the backing buffer up until the current write position.
          (set! pos (+ pos 12))
          _)
        (write-vec3f-be
-         [_ [x y z]]
+           [_ [x y z]]
          (ensure-size _ 12)
          (.setFloat32 dv pos x)
          (.setFloat32 dv (+ pos 4) y)
@@ -431,12 +431,12 @@ the backing buffer up until the current write position.
          _)
        IStreamPosition
        (skip
-         [_ x] (ensure-size _ x) (set! pos (+ pos x)) _)
+           [_ x] (ensure-size _ x) (set! pos (+ pos x)) _)
        (get-position
-         [_] pos)
+           [_] pos)
        IBuffer
        (get-buffer
-         [_] (js/Uint8Array. buf 0 pos))))
+           [_] (js/Uint8Array. buf 0 pos))))
 #+END_SRC
 
 *** Constructor
