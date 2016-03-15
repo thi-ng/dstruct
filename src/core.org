@@ -3,6 +3,7 @@
 * Contents                                                         :toc_4_gh:
  - [[#namespace-thingdstructcore][Namespace: thi.ng.dstruct.core]]
      - [[#indexing-functions][Indexing functions]]
+     - [[#maps][Maps]]
      - [[#sets][Sets]]
      - [[#sequence-functions][Sequence functions]]
      - [[#string-functions][String functions]]
@@ -52,6 +53,26 @@
     [f f2 coll]
     (let [keys (collect-set f coll)]
       (zipmap keys (if (= f2 identity) keys (map f2 keys)))))
+#+END_SRC
+
+** Maps
+#+BEGIN_SRC clojure :noweb-ref maps
+  (defn deep-merge
+    "Merge fn to be used with `merge-with`. Recursively merges map
+    values which are maps or seqs (for the latter `into` is used, only
+    if RHS is seq or set as well). If the RHS value has the metadata key
+    `:replace` set, it is used as new value without merging."
+    [l r]
+    (cond
+      (get (meta r) :replace)       r
+      (or (sequential? l) (set? l)) (if (or (sequential? r) (set? r)) (into l r) r)
+      (map? l)                      (merge-with deep-merge l r)
+      :else                         r))
+
+  (defn merge-deep
+    "Calls `merge-with` using `deep-merge` as merge fn."
+    ([a b] (merge-with deep-merge a b))
+    ([a b & maps] (apply merge-with deep-merge a b maps)))
 #+END_SRC
 
 ** Sets
@@ -115,8 +136,7 @@
                     [(transient []) (transient [])] coll)]
          [(persistent! m) (persistent! n)]))
     ([f f2 coll]
-       (let [[m n] (bisect f coll)]
-         [(f2 m) (f2 n)])))
+       (mapv f2 (bisect f coll))))
 
   (defn neighbors
     [x coll]
@@ -220,9 +240,9 @@
 ** String functions
 
 #+BEGIN_SRC clojure :noweb-ref strings
-  (defn unwrap-string [s n] (subs s n (- (count s) n)))
+  (defn unwrap-str [s n] (subs s n (- (count s) n)))
   
-  (defn wrap [a b s] (str a s b))
+  (defn wrap-str [s pre post] (str pre s post))
   
   (defn stringify-keys
     [m]
@@ -262,6 +282,8 @@
   (ns thi.ng.dstruct.core)
 
   <<index>>
+
+  <<maps>>
 
   <<sets>>
 

@@ -108,7 +108,7 @@ target/dstruct-<<version>>.js
 #+END_SRC
 **** [[https://github.com/thi-ng/math][thi.ng/math]]
 #+BEGIN_SRC clojure :noweb-ref dep-math
-[thi.ng/math "0.1.4"]
+[thi.ng/math "0.2.0-SNAPSHOT"]
 #+END_SRC
 *** Development
 **** [[https://github.com/hugoduncan/criterium][Criterium]]
