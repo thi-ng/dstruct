@@ -13,9 +13,9 @@
 
 * Namespace: thi.ng.dstruct.streams
 
-This namespace provides unified CLJ/CLJS stream abstractions to read &
-write binary data. In Clojure, the stream wrappers are simply around
-the standard =java.io.InputStream= / =java.io.OutputStream=. In
+This namespace provides unified CLJ/CLJS I/O stream abstractions to
+read & write binary data. In Clojure, the stream wrappers are simply
+around the standard =java.io.InputStream= / =java.io.OutputStream=. In
 Clojurescript, the implementation works with a backing =ArrayBuffer=
 and =DataView=.
 
@@ -67,7 +67,7 @@ and =DataView=.
 #+END_SRC
 
 For CLJS, the =IBuffer= protocol provides access to a streams
-underlying =ArrayBuffer=. This protocol is not used in Clojure.
+underlying =ArrayBuffer= (or JS typed array).
 
 #+BEGIN_SRC clojure :noweb-ref protocols
   (defprotocol IBuffer
@@ -463,7 +463,7 @@ the backing buffer up until the current write position.
      (defn as-data-url
        "Takes an input or outputstream and optional mime type, returns
     contents as data url wrapped in a volatile. The volatile's value is
-    initially nil and might only become realized after the function
+    initially nil and will only become realized after the function
     returned."
        ([stream]
         (as-data-url stream "application/octet-stream"))
@@ -476,16 +476,15 @@ the backing buffer up until the current write position.
 
   #?(:cljs
      (defn as-data-url-async
-       "Takes an input or outputstream, core.async channel and optional
-    mime type, places contents as data url string onto channel, returns
-    channel."
-       ([stream chan]
-        (as-data-url-async stream chan "application/octet-stream"))
-       ([stream chan mime]
+       "Takes an input or outputstream, callback fn and optional mime
+    type, calls fn with data url string, returns nil."
+       ([stream cb]
+        (as-data-url-async stream cb "application/octet-stream"))
+       ([stream cb mime]
         (let [fr (js/FileReader.)]
-          (set! (.-onload fr) (fn [e] (async/put! chan (-> e .-target .-result))))
+          (set! (.-onload fr) #(cb (-> % .-target .-result)))
           (.readAsDataURL fr (js/Blob. #js [(get-buffer stream)] #js {"type" mime}))
-          chan))))
+          nil))))
 #+END_SRC
 
 ** Helpers
@@ -526,10 +525,7 @@ the backing buffer up until the current write position.
   (ns thi.ng.dstruct.streams
     #?(:clj
        (:import
-        [java.io OutputStream InputStream])
-       :cljs
-       (:require
-        [cljs.core.async :as async])))
+        [java.io OutputStream InputStream])))
 
   (declare ensure-readable ensure-size)
 
