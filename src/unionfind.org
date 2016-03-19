@@ -29,12 +29,12 @@
   (deftype DisjointSet [index components]
     PUnionFind
     (canonical [_ p]
-      (if (components p) p (index p)))
-    (canonical? [_ p] (components p))
+      (if (get components p) p (get index p)))
+    (canonical? [_ p] (get components p))
     (set-canonical
       [_ p q]
       (let [canon (canonical _ p)
-            comp  (components canon)]
+            comp  (get components canon)]
         (if (comp q)
           (DisjointSet.
            (reduce #(assoc %1 %2 q) (dissoc index q) (disj comp q))
@@ -43,9 +43,9 @@
            (new #?(:clj IllegalArgumentException :cljs js/Error)
                 (str p " not unified with " q))))))
     (unified? [_ p q]
-      (= (index p p) (index q q)))
+      (= (get index p p) (get index q q)))
     (component [_ p]
-      (components (canonical _ p)))
+      (get components (canonical _ p)))
     (disjoint-components [_]
       (vals components))
     (register
@@ -54,21 +54,21 @@
           (DisjointSet. (assoc index p p) (assoc components p #{p}))))
     (unregister [_ p]
       (if (canonical _ p)
-        (if-let [comp (components p)]
+        (if-let [comp (get components p)]
           (let [comp (disj comp p)]
             (if-let [q (first comp)]
               (DisjointSet.
                (reduce #(assoc % %2 q) (dissoc index p q) (disj comp q))
                (-> components (dissoc p) (assoc q comp)))
               (DisjointSet. (dissoc index p) (dissoc components p))))
-          (DisjointSet. (dissoc index p) (update-in components [(index p)] disj p)))
+          (DisjointSet. (dissoc index p) (update components (get index p) disj p)))
         _))
     (union [_ p q]
-      (let [canonp (index p p)
-            canonq (index q q)]
+      (let [canonp (get index p p)
+            canonq (get index q q)]
         (if (= canonp canonq) _
-            (let [compp (or (components canonp) #{canonp})
-                  compq (or (components canonq) #{canonq})
+            (let [compp (or (get components canonp) #{canonp})
+                  compq (or (get components canonq) #{canonq})
                   [canonp canonq compp compq] (if (<= (count compp) (count compq))
                                                 [canonp canonq compp compq]
                                                 [canonq canonp compq compp])]
@@ -85,7 +85,7 @@
 
   (defn disjoint-set
     ([] (DisjointSet. {} {}))
-    ([xs] (reduce (partial apply union) (DisjointSet. {} {}) xs)))
+    ([xs] (reduce #(apply union % %2) (DisjointSet. {} {}) xs)))
 #+END_SRC
 
 ** Complete namespace definition

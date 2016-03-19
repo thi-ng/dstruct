@@ -221,7 +221,9 @@ underlying =ArrayBuffer= (or JS typed array).
       [_] pos)
      IBuffer
      (get-buffer
-      [_] buf))
+      [_] buf)
+     (into-buffer
+      [_] (err/unsupported!)))
 #+END_SRC
 
 *** Constructor
@@ -301,26 +303,26 @@ the backing buffer up until the current write position.
            (write-uint32-be _ (unchecked-int (bit-and x 0xffffffff)))
            _))
        (write-vec2f-le
-           [_ [x y]]
-         (write-float-le _ x)
-         (write-float-le _ y)
+           [_ v]
+         (write-float-le _ (first v))
+         (write-float-le _ (nth v 1))
          _)
        (write-vec2f-be
-           [_ [x y]]
-         (write-float-be _ x)
-         (write-float-be _ y)
+           [_ v]
+         (write-float-be _ (first v))
+         (write-float-be _ (nth v 1))
          _)
        (write-vec3f-le
-           [_ [x y z]]
-         (write-float-le _ x)
-         (write-float-le _ y)
-         (write-float-le _ z)
+           [_ v]
+         (write-float-le _ (first v))
+         (write-float-le _ (nth v 1))
+         (write-float-le _ (nth v 2))
          _)
        (write-vec3f-be
-           [_ [x y z]]
-         (write-float-be _ x)
-         (write-float-be _ y)
-         (write-float-be _ z)
+           [_ v]
+         (write-float-be _ (first v))
+         (write-float-be _ (nth v 1))
+         (write-float-be _ (nth v 2))
          _)
        IStreamPosition
        (skip
@@ -400,33 +402,33 @@ the backing buffer up until the current write position.
          (set! pos (+ pos 8))
          _)
        (write-vec2f-le
-           [_ [x y]]
+           [_ v]
          (ensure-size _ 8)
-         (.setFloat32 dv pos x true)
-         (.setFloat32 dv (+ pos 4) y true)
+         (.setFloat32 dv pos (first v) true)
+         (.setFloat32 dv (+ pos 4) (nth v 1) true)
          (set! pos (+ pos 8))
          _)
        (write-vec2f-be
-           [_ [x y]]
+           [_ v]
          (ensure-size _ 8)
-         (.setFloat32 dv pos x)
-         (.setFloat32 dv (+ pos 4) y)
+         (.setFloat32 dv pos (first v))
+         (.setFloat32 dv (+ pos 4) (nth v 1))
          (set! pos (+ pos 8))
          _)
        (write-vec3f-le
-           [_ [x y z]]
+           [_ v]
          (ensure-size _ 12)
-         (.setFloat32 dv pos x true)
-         (.setFloat32 dv (+ pos 4) y true)
-         (.setFloat32 dv (+ pos 8) z true)
+         (.setFloat32 dv pos (first v) true)
+         (.setFloat32 dv (+ pos 4) (nth v 1) true)
+         (.setFloat32 dv (+ pos 8) (nth v 2) true)
          (set! pos (+ pos 12))
          _)
        (write-vec3f-be
-           [_ [x y z]]
+           [_ v]
          (ensure-size _ 12)
-         (.setFloat32 dv pos x)
-         (.setFloat32 dv (+ pos 4) y)
-         (.setFloat32 dv (+ pos 8) z)
+         (.setFloat32 dv pos (first v))
+         (.setFloat32 dv (+ pos 4) (nth v 1))
+         (.setFloat32 dv (+ pos 8) (nth v 2))
          (set! pos (+ pos 12))
          _)
        IStreamPosition
@@ -436,7 +438,9 @@ the backing buffer up until the current write position.
            [_] pos)
        IBuffer
        (get-buffer
-           [_] (js/Uint8Array. buf 0 pos))))
+           [_] (js/Uint8Array. buf 0 pos))
+       (into-buffer
+           [_ buf stride idx] (err/unsupported!))))
 #+END_SRC
 
 *** Constructor

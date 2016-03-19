@@ -5,6 +5,7 @@
      - [[#indexing-functions][Indexing functions]]
      - [[#maps][Maps]]
      - [[#sets][Sets]]
+     - [[#tree-walking][Tree walking]]
      - [[#sequence-functions][Sequence functions]]
      - [[#string-functions][String functions]]
      - [[#complete-namespace-definition][Complete namespace definition]]
@@ -24,8 +25,8 @@
 
   (defn index-kv
     [m k v]
-    (if-let [[k vv] (find m k)]
-      (assoc m k (conj vv v))
+    (if-let [e (find m k)]
+      (assoc m (key e) (conj (val e) v))
       (assoc m k #{v})))
 
   (defn index-kv!
@@ -36,7 +37,7 @@
 
   (defn value-set
     ([idx v] (into #{} (get idx v)))
-    ([f idx v] (persistent! (reduce #(conj! %1 (f %2)) (transient #{}) (get idx v))))) ;; TODO transducer
+    ([f idx v] (into #{} (map f) (get idx v))))
 
   (def set-conj (fnil conj #{}))
 
@@ -47,7 +48,7 @@
   (def vec-conj2* #(if (nil? %) %2 (if (vector? %) (conj % %2) [% %2])))
 
   (defn collect-set
-    [f coll] (->> coll (map f) (into #{})))
+    [f coll] (into #{} (map f) coll))
 
   (defn collect-indexed
     [f f2 coll]
@@ -80,19 +81,52 @@
 #+BEGIN_SRC clojure :noweb-ref sets
   (defn interval-set
     [& ivals]
-    (->> ivals
-         (mapcat (fn [v] (if (sequential? v) (range (v 0) (inc (v 1))) [v])))
-         (into (sorted-set))))
+    (into
+     (sorted-set)
+     (mapcat
+      (fn [v] (if (sequential? v) (range (first v) (inc (nth v 1))) [v])))
+     ivals))
 
   (defn check-intervals
     [& ivals]
-    (let [[ivals const] (reduce
-                         (fn [[i c] v]
-                           (if (sequential? v) [(conj i v) c] [i (conj c v)]))
-                         [[] #{}] ivals)]
+    (let [[ivals const]
+          (reduce
+           (fn [[i c] v]
+             (if (sequential? v)
+               [(conj i v) c]
+               [i (conj c v)]))
+           [[] #{}] ivals)]
       (fn [x]
         (if (const x) x
-            (some (fn [[a b]] (and (<= a x) (<= x b))) ivals)))))
+            (some #(if (<= (first %) x) (<= x (nth % 1))) ivals)))))
+#+END_SRC
+
+** Tree walking
+
+CLJS walk differs to clojure's impl and doesn't work for
+defrecords hence we provide a custom version here.
+
+#+BEGIN_SRC clojure :noweb-ref walk
+  (defn walk
+    [inner outer form]
+    (cond
+      (seq? form)    (outer (doall (map inner form)))
+      (vector? form) (outer (mapv inner form))
+      :else          (outer form)))
+
+  (defn postwalk
+    [f form] (walk #(postwalk f %) f form))
+
+  (defn filter-tree
+    "Applies `f` to root coll and every of its (nested) elements. Returns
+    a vector of items for which `f` returned a truthy value."
+    [f root]
+    (let [walk (fn walk [acc node]
+                 (cond
+                   (f node) (conj! acc node)
+                   (coll? node) (reduce walk acc node)
+                   :else acc))]
+      (persistent! (reduce walk (transient []) root))))
 #+END_SRC
 
 ** Sequence functions
@@ -118,17 +152,6 @@
       (when (every? seq seqs)
         (lazy-seq (step v-original-seqs)))))
 
-  (defn filter-tree
-    "Applies `f` to root coll and every of its (nested) elements. Returns
-    a vector of items for which `f` returned a truthy value."
-    [f root]
-    (let [walk (fn walk [acc node]
-                 (cond
-                  (f node) (conj acc node)
-                  (coll? node) (reduce walk acc node)
-                  :default acc))]
-      (reduce walk [] root)))
-
   (defn bisect
     ([f coll]
        (let [[m n] (reduce
@@ -143,9 +166,9 @@
     (let [n (dec (count coll))]
       (loop [i n]
         (when (>= i 0)
-          (if (= x (coll i))
-            [(coll (if (pos? i) (dec i) n))
-             (coll (if (< i n) (inc i) 0))]
+          (if (= x (nth coll i))
+            [(nth coll (if (pos? i) (dec i) n))
+             (nth coll (if (< i n) (inc i) 0))]
             (recur (dec i)))))))
 
   (defn successive-nth
@@ -189,7 +212,7 @@
     ([f1 f2 coll] (reduce-pairs f1 f2 nil coll))
     ([f1 f2 acc coll]
        (when (> (count coll) 1)
-         (let [pairs (map (fn [[a b]] (f2 a b)) (successive-nth 2 coll))]
+         (let [pairs (map (fn [[a b]] (f2 a b)) (partition 2 1 coll))]
            (if acc
              (reduce f1 acc pairs)
              (reduce f1 pairs))))))
@@ -230,49 +253,51 @@
   (defn iterate-while
     [pred f x]
     (lazy-seq
-     (when (pred x)
+     (if (pred x)
        (cons x (iterate-while pred f (f x))))))
 
   (defn iterate-n
-    [n f x] (->> x (iterate f) (take n) (last)))
+    [n f x]
+    (loop [x x, i 1]
+      (if (< i n)
+        (recur (f x) (inc i))
+        x)))
 #+END_SRC
 
 ** String functions
 
 #+BEGIN_SRC clojure :noweb-ref strings
   (defn unwrap-str [s n] (subs s n (- (count s) n)))
-  
+
   (defn wrap-str [s pre post] (str pre s post))
-  
+
   (defn stringify-keys
-    [m]
-    (into {} (map (fn [[k v :as e]] (if (keyword? k) [(name k) v] e)) m)))
-  
+    [m] (into {} (map (fn [e] [(str (key e)) (val e)])) m))
+
   (defn demunge-flags
-    "Takes a keyword or string and string/seq of items, returns map with
-    items as keys and boolean values indicating if an item has been
-    found in the string representation of the kw. If `kw` is nil, returns
-    nil.
-  
+    "Takes a keyword or string of flags and string/seq of items, returns
+    map with items as keys and boolean values indicating if an item has
+    been found in the string representation of the kw. If `kw` is nil,
+    returns nil.
+
         (demunge-flags :cad \"abcd\")
         #_=> {:a true :b false :c true :d true}"
     [kw xs]
     (when kw
-      (let [flags (name kw)]
+      (let [^String flags (name kw)]
         (reduce
          (fn [acc x]
            (let [x (str x)]
              (assoc acc (keyword x) (<= 0 (.indexOf flags x)))))
          {} xs))))
-  
+
   (defn demunge-flags-seq
     "Like `demunge-flags` but returns lazyseq of booleans in same order as xs.
-  
-        (demunge-flags-seq :cad \"abcd\")
-        #_=> [true false true true]"
+
+        (demunge-flags-seq :cad \"abcd\") => [true false true true]"
     [kw xs]
     (when kw
-      (let [flags (name kw)]
+      (let [^String flags (name kw)]
         (map #(<= 0 (.indexOf flags (str %))) xs))))
 #+END_SRC
 
