@@ -527,6 +527,8 @@ the backing buffer up until the current write position.
 
 #+BEGIN_SRC clojure :tangle ../babel/src/thi/ng/dstruct/streams.cljc :noweb yes :mkdirp yes :padline no
   (ns thi.ng.dstruct.streams
+    (:require
+     [thi.ng.xerror.core :as err])
     #?(:clj
        (:import
         [java.io OutputStream InputStream])))
