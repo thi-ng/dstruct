@@ -3,6 +3,10 @@
 * Contents                                                         :toc_4_gh:
  - [[#namespace-thingdstructstreams][Namespace: thi.ng.dstruct.streams]]
      - [[#protocols][Protocols]]
+         - [[#iinputstream][IInputStream]]
+         - [[#ioutputstream][IOutputStream]]
+         - [[#istreamposition][IStreamPosition]]
+         - [[#ibuffer--iintobuffer][IBuffer & IIntoBuffer]]
      - [[#input-stream][Input stream]]
          - [[#constructor][Constructor]]
      - [[#output-stream][Output stream]]
@@ -27,7 +31,7 @@ and =DataView=.
   function of the =IBuffer= protocol defined below
 
 ** Protocols
-
+*** IInputStream
 #+BEGIN_SRC clojure :noweb-ref protocols
   (defprotocol IInputStream
     (read-utf8-line [_])
@@ -44,7 +48,10 @@ and =DataView=.
     (read-vec2f-be [_])
     (read-vec3f-le [_])
     (read-vec3f-be [_]))
+#+END_SRC
 
+*** IOutputStream
+#+BEGIN_SRC clojure :noweb-ref protocols
   (defprotocol IOutputStream
     (write-utf8-bytes [_ str])
     (write-uint8 [_ x])
@@ -60,19 +67,40 @@ and =DataView=.
     (write-vec2f-be [_ v])
     (write-vec3f-le [_ v])
     (write-vec3f-be [_ v]))
+#+END_SRC
 
+*** IStreamPosition
+#+BEGIN_SRC clojure :noweb-ref protocols
   (defprotocol IStreamPosition
     (skip [_ x])
     (get-position [_]))
 #+END_SRC
 
-For CLJS, the =IBuffer= protocol provides access to a streams
-underlying =ArrayBuffer= (or JS typed array).
+*** IBuffer & IIntoBuffer
+
+The =IBuffer= and =IIntoBuffer= protocols provide access to a type's
+underlying native buffer and providing potentially optimized
+implementations to move a type's internal data into a native buffer.
+For Clojure this is intended to be used with buffers from the
+=java.nio= package, or JS typed arrays in Clojurescript.
+
+Furthermore, in Clojurescript implementations are expected to deal
+with *unsigned* data buffers (for byte, short, int versions).
 
 #+BEGIN_SRC clojure :noweb-ref protocols
   (defprotocol IBuffer
-    (get-buffer [_])
-    (into-buffer [_ dest stride idx]))
+    (get-byte-buffer [_])
+    (get-float-buffer [_])
+    (get-double-buffer [_])
+    (get-short-buffer [_])
+    (get-int-buffer [_]))
+
+  (defprotocol IIntoBuffer
+    (into-byte-buffer [_ dest stride idx])
+    (into-float-buffer [_ dest stride idx])
+    (into-double-buffer [_ dest stride idx])
+    (into-short-buffer [_ dest stride idx])
+    (into-int-buffer [_ dest stride idx]))
 #+END_SRC
 
 ** Input stream
@@ -220,10 +248,16 @@ underlying =ArrayBuffer= (or JS typed array).
      (get-position
       [_] pos)
      IBuffer
-     (get-buffer
-      [_] buf)
-     (into-buffer
-      [_] (err/unsupported!)))
+     (get-byte-buffer
+      [_] (js/Uint8Array. buf))
+     (get-float-buffer
+      [_] (js/Float32Array. buf))
+     (get-double-buffer
+      [_] (js/Float64Array. buf))
+     (get-short-buffer
+      [_] (js/Uint16Array. buf))
+     (get-int-buffer
+      [_] (js/Uint32Array. buf)))
 #+END_SRC
 
 *** Constructor
@@ -437,10 +471,16 @@ the backing buffer up until the current write position.
        (get-position
            [_] pos)
        IBuffer
-       (get-buffer
+       (get-byte-buffer
            [_] (js/Uint8Array. buf 0 pos))
-       (into-buffer
-           [_ buf stride idx] (err/unsupported!))))
+       (get-float-buffer
+           [_] (js/Float32Array. buf 0 (unsigned-bit-shift-right pos 2)))
+       (get-double-buffer
+           [_] (js/Float64Array. buf 0 (unsigned-bit-shift-right pos 3)))
+       (get-short-buffer
+           [_] (js/Uint16Array. buf 0 (unsigned-bit-shift-right pos 1)))
+       (get-int-buffer
+           [_] (js/Uint32Array. buf 0 (unsigned-bit-shift-right pos 2)))))
 #+END_SRC
 
 *** Constructor
@@ -465,7 +505,7 @@ the backing buffer up until the current write position.
 #+BEGIN_SRC clojure :noweb-ref dataurl
   #?(:cljs
      (defn as-data-url
-       "Takes an input or outputstream and optional mime type, returns
+    "Takes an input or outputstream and optional mime type, returns
     contents as data url wrapped in a volatile. The volatile's value is
     initially nil and will only become realized after the function
     returned."
@@ -475,7 +515,7 @@ the backing buffer up until the current write position.
         (let [fr  (js/FileReader.)
               uri (volatile! nil)]
           (set! (.-onload fr) (fn [e] (vreset! uri (-> e .-target .-result))))
-          (.readAsDataURL fr (js/Blob. #js [(get-buffer stream)] #js {"type" mime}))
+          (.readAsDataURL fr (js/Blob. #js [(get-byte-buffer stream)] #js {"type" mime}))
           uri))))
 
   #?(:cljs
@@ -487,7 +527,7 @@ the backing buffer up until the current write position.
        ([stream cb mime]
         (let [fr (js/FileReader.)]
           (set! (.-onload fr) #(cb (-> % .-target .-result)))
-          (.readAsDataURL fr (js/Blob. #js [(get-buffer stream)] #js {"type" mime}))
+          (.readAsDataURL fr (js/Blob. #js [(get-byte-buffer stream)] #js {"type" mime}))
           nil))))
 #+END_SRC
 
