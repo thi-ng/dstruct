@@ -27,8 +27,8 @@ and =DataView=.
   endian order.
 - Streams are skippable in both CLJ/CLJS, but stream position can only
   be obtained in CLJS
-- To access a stream's underlying =ArrayBuffer=, use the =get-buffer=
-  function of the =IBuffer= protocol defined below
+- To access a stream's underlying native buffer (in CLJS), use the
+  =get-buffer= function of the =IBuffer= protocol defined below
 
 ** Protocols
 *** IInputStream
@@ -79,13 +79,19 @@ and =DataView=.
 *** IBuffer & IIntoBuffer
 
 The =IBuffer= and =IIntoBuffer= protocols provide access to a type's
-underlying native buffer and providing potentially optimized
-implementations to move a type's internal data into a native buffer.
-For Clojure this is intended to be used with buffers from the
-=java.nio= package, or JS typed arrays in Clojurescript.
+(not necessarily a stream) underlying native buffer and provide
+potentially optimized implementations to move a type's internal data
+into a native buffer. For Clojure this is intended to be used with
+buffers from the =java.nio= package, or JS [[http://thi.ng/typedarrays][typed arrays]] in
+Clojurescript.
 
-Furthermore, in Clojurescript implementations are expected to deal
+Furthermore, in Clojurescript, implementations are expected to deal
 with *unsigned* data buffers (for byte, short, int versions).
+
+These protocols are currently mainly used by the following projects:
+
+- http://thi.ng/geom (vectors, matrices, meshes for OpenGL, mesh I/O)
+- http://thi.ng/color (color types)
 
 #+BEGIN_SRC clojure :noweb-ref protocols
   (defprotocol IBuffer
