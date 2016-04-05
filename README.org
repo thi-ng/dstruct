@@ -71,7 +71,7 @@ compatible with Clojure versions < 1.7.0*...
 ** Injected properties                                             :noexport:
 
 #+BEGIN_SRC clojure :noweb-ref version
-0.2.0-SNAPSHOT
+0.2.0
 #+END_SRC
 
 #+BEGIN_SRC clojure :exports none :noweb-ref project-url
@@ -237,14 +237,15 @@ symbol =version= holding the version string defined above:
 
 ** Release history
 
-| *Version* | *Released* | *Description*                               |
-|-----------+------------+---------------------------------------------|
-|     0.1.5 | 2016-03-19 | update deps, minor fix streams ns           |
-|     0.1.4 | 2016-03-19 | fix tangling of tree walk fns               |
-|     0.1.3 | 2016-03-19 | add BidirIndex, minor refactor, update deps |
-|     0.1.2 | 2015-11-05 | add clj/cljs i/o stream abstractions        |
-|     0.1.1 | 2015-09-07 | bugfix DisjointSet, updated dependencies    |
-|     0.1.0 | 2015-05-25 | initial test release                        |
+| *Version* | *Released* | *Description*                                                 |
+|-----------+------------+---------------------------------------------------------------|
+|     0.2.0 | 2016-04-05 | refactor IBuffer / IIntoBuffer protocol, minor other bugfixes |
+|     0.1.5 | 2016-03-19 | update deps, minor fix streams ns                             |
+|     0.1.4 | 2016-03-19 | fix tangling of tree walk fns                                 |
+|     0.1.3 | 2016-03-19 | add BidirIndex, minor refactor, update deps                   |
+|     0.1.2 | 2015-11-05 | add clj/cljs i/o stream abstractions                          |
+|     0.1.1 | 2015-09-07 | bugfix DisjointSet, updated dependencies                      |
+|     0.1.0 | 2015-05-25 | initial test release                                          |
 
 ** Contributors
 
