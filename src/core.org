@@ -257,8 +257,9 @@ defrecords hence we provide a custom version here.
        (cons x (iterate-while pred f (f x))))))
 
   (defn iterate-n
+    "Iteratively applies f to x, n times, then returns result."
     [n f x]
-    (loop [x x, i 1]
+    (loop [x x, i 0]
       (if (< i n)
         (recur (f x) (inc i))
         x)))
