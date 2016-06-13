@@ -116,18 +116,18 @@ These protocols are currently mainly used by the following projects:
      (deftype InputStreamWrapper [^InputStream in ^bytes buf]
        IInputStream
        (read-uint8
-         [_]
+           [_]
          (byte->int (.read in)))
        (read-uint16-le
-         [_]
+           [_]
          (.read in buf 0 2)
          (bit-or (byte->int (aget buf 0)) (bit-shift-left (byte->int (aget buf 1)) 8)))
        (read-uint16-be
-         [_]
+           [_]
          (.read in buf 0 2)
          (bit-or (byte->int (aget buf 1)) (bit-shift-left (byte->int (aget buf 0)) 8)))
        (read-uint32-le
-         [_]
+           [_]
          (.read in buf 0 4)
          (bit-or
           (byte->int (aget buf 0))
@@ -135,7 +135,7 @@ These protocols are currently mainly used by the following projects:
           (bit-shift-left (byte->int (aget buf 2)) 16)
           (bit-shift-left (byte->int (aget buf 3)) 24)))
        (read-uint32-be
-         [_]
+           [_]
          (.read in buf 0 4)
          (bit-or
           (byte->int (aget buf 3))
@@ -143,127 +143,121 @@ These protocols are currently mainly used by the following projects:
           (bit-shift-left (byte->int (aget buf 1)) 16)
           (bit-shift-left (byte->int (aget buf 0)) 24)))
        (read-float-le
-         [_] (Float/intBitsToFloat (unchecked-int (read-uint32-le _))))
+           [_] (Float/intBitsToFloat (unchecked-int (read-uint32-le _))))
        (read-float-be
-         [_] (Float/intBitsToFloat (unchecked-int (read-uint32-be _))))
+           [_] (Float/intBitsToFloat (unchecked-int (read-uint32-be _))))
        (read-double-le
-         [_]
+           [_]
          (Double/longBitsToDouble
           (unchecked-long
            (bit-or
             (read-uint32-le _)
             (bit-shift-left (read-uint32-le _) 32)))))
        (read-double-be
-         [_]
+           [_]
          (Double/longBitsToDouble
           (unchecked-long
            (bit-or
             (bit-shift-left (read-uint32-be _) 32)
             (read-uint32-be _)))))
        (read-vec2f-le
-         [_] [(read-float-le _) (read-float-le _)])
+           [_] [(read-float-le _) (read-float-le _)])
        (read-vec2f-be
-         [_] [(read-float-be _) (read-float-be _)])
+           [_] [(read-float-be _) (read-float-be _)])
        (read-vec3f-le
-         [_] [(read-float-le _) (read-float-le _) (read-float-le _)])
+           [_] [(read-float-le _) (read-float-le _) (read-float-le _)])
        (read-vec3f-be
-         [_] [(read-float-be _) (read-float-be _) (read-float-be _)])
+           [_] [(read-float-be _) (read-float-be _) (read-float-be _)])
        IStreamPosition
        (skip
-         [_ x] (.skip in x) _)
+           [_ x] (.skip in x) _)
        (get-position
-         [_] (throw (UnsupportedOperationException.))))
+           [_] (throw (UnsupportedOperationException.))))
 
      :cljs
      (deftype InputStreamWrapper [^js/ArrayBuffer buf ^js/DataView dv ^:mutable pos]
        IInputStream
        (read-uint8
-         [_]
+           [_]
          (ensure-readable _ 1)
          (let [x (.getUint8 dv pos)]
            (set! pos (inc pos))
            x))
        (read-uint16-le
-         [_]
+           [_]
          (ensure-readable _ 2)
          (let [x (.getUint16 dv pos true)]
            (set! pos (+ pos 2))
            x))
        (read-uint16-be
-         [_]
+           [_]
          (ensure-readable _ 2)
          (let [x (.getUint16 dv pos)]
            (set! pos (+ pos 2))
            x))
        (read-uint32-le
-         [_]
+           [_]
          (ensure-readable _ 4)
          (let [x (.getUint32 dv pos true)]
            (set! pos (+ pos 4))
            x))
        (read-uint32-be
-         [_]
+           [_]
          (ensure-readable _ 4)
          (let [x (.getUint32 dv pos)]
            (set! pos (+ pos 4))
            x))
        (read-float-le
-         [_]
+           [_]
          (ensure-readable _ 4)
          (let [x (.getFloat32 dv pos true)]
            (set! pos (+ pos 4))
            x))
        (read-float-be
-         [_]
+           [_]
          (ensure-readable _ 4)
          (let [x (.getFloat32 dv pos)]
            (set! pos (+ pos 4))
            x))
        (read-double-le
-         [_]
+           [_]
          (ensure-readable _ 8)
          (let [x (.getFloat64 dv pos true)]
            (set! pos (+ pos 8))
            x))
        (read-double-be
-         [_]
+           [_]
          (ensure-readable _ 8)
          (let [x (.getFloat64 dv pos)]
            (set! pos (+ pos 8))
            x))
        (read-vec2f-le
-         [_] [(read-float-le _) (read-float-le _)])
+           [_] [(read-float-le _) (read-float-le _)])
        (read-vec2f-be
-         [_] [(read-float-be _) (read-float-be _)])
+           [_] [(read-float-be _) (read-float-be _)])
        (read-vec3f-le
-         [_] [(read-float-le _) (read-float-le _) (read-float-le _)])
+           [_] [(read-float-le _) (read-float-le _) (read-float-le _)])
        (read-vec3f-be
-         [_] [(read-float-be _) (read-float-be _) (read-float-be _)]))
-     IStreamPosition
-     (skip
-      [_ x]
-      (let [p   (+ pos x)
-            len (.-length buf)]
-        (if (< p len)
-          (do (set! pos p) _)
-          (throw
-           (js/Error.
-            (str "EOF overrun, current pos: " pos
-                 ", requested skip pos: " p
-                 ", but length: " len))))))
-     (get-position
-      [_] pos)
-     IBuffer
-     (get-byte-buffer
-      [_] (js/Uint8Array. buf))
-     (get-float-buffer
-      [_] (js/Float32Array. buf))
-     (get-double-buffer
-      [_] (js/Float64Array. buf))
-     (get-short-buffer
-      [_] (js/Uint16Array. buf))
-     (get-int-buffer
-      [_] (js/Uint32Array. buf)))
+           [_] [(read-float-be _) (read-float-be _) (read-float-be _)])
+       IStreamPosition
+       (skip
+           [_ x]
+         (ensure-readable _ x)
+         (set! pos (+ pos x))
+         _)
+       (get-position
+           [_] pos)
+       IBuffer
+       (get-byte-buffer
+           [_] (js/Uint8Array. buf))
+       (get-float-buffer
+           [_] (js/Float32Array. buf))
+       (get-double-buffer
+           [_] (js/Float64Array. buf))
+       (get-short-buffer
+           [_] (js/Uint16Array. buf))
+       (get-int-buffer
+           [_] (js/Uint32Array. buf))))
 #+END_SRC
 
 *** Constructor
@@ -551,7 +545,7 @@ the backing buffer up until the current write position.
   #?(:cljs
      (defn ^:private ensure-readable
        [^InputStreamWrapper in size]
-       (if (>= (+ (.-pos in) size) (.-byteLength (.-buf in)))
+       (if (> (+ (.-pos in) size) (.-byteLength (.-buf in)))
          (throw
           (js/Error.
            (str "EOF overrun, current pos: " (.-pos in)

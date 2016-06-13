@@ -71,7 +71,7 @@ compatible with Clojure versions < 1.7.0*...
 ** Injected properties                                             :noexport:
 
 #+BEGIN_SRC clojure :noweb-ref version
-0.2.0
+0.2.1
 #+END_SRC
 
 #+BEGIN_SRC clojure :exports none :noweb-ref project-url
@@ -239,6 +239,7 @@ symbol =version= holding the version string defined above:
 
 | *Version* | *Released* | *Description*                                                 |
 |-----------+------------+---------------------------------------------------------------|
+|     0.2.1 | 2016-06-13 | bugfix CLJS InputStreamWrapper                                |
 |     0.2.0 | 2016-04-05 | refactor IBuffer / IIntoBuffer protocol, minor other bugfixes |
 |     0.1.5 | 2016-03-19 | update deps, minor fix streams ns                             |
 |     0.1.4 | 2016-03-19 | fix tangling of tree walk fns                                 |
